@@ -5,12 +5,23 @@
  VERSION : 1.1
 ===========================================================================
 
+.SYNOPSIS
+
 .DESCRIPTION
     Exports contacts as a PST file for a list of mailboxes
+    
+.PARAMETER Mailboxes
 
+.PARAMETER Server
+
+.PARAMETER ExportPath
+
+.PARAMETER SimultaneousJobs
+
+.PARAMETER ShowRuntime
 #>
 
-function Export-Contacts {
+function Export-ExchangeContacts {
     [CmdletBinding()]
     Param(
         [Parameter(ValueFromPipeline,
@@ -24,7 +35,7 @@ function Export-Contacts {
         [Parameter(HelpMessage="Enter number of exports to run simultaneously")]
         [Int] $SimultaneousJobs = 20,
         [Parameter(HelpMessage="Display total script run time after completion")]
-        [Bool] $ShowRunTime = $false
+        [Bool] $ShowRuntime = $false
     )
     BEGIN {
         ### Validate parameters ###
@@ -98,7 +109,7 @@ function Export-Contacts {
 
         ### Display run time/duration ###
         $StopWatch.Stop()
-        if ($showRunTime -eq $true) {Write-Output "Total script run time: $($StopWatch.Elapsed.TotalDays) Days"}
+        if ($showRuntime -eq $true) {Write-Output "Total script run time: $($StopWatch.Elapsed.TotalHours) Hours"}
     }
 }
 
