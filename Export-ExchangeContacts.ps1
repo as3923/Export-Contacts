@@ -58,7 +58,7 @@ function Export-ExchangeContacts {
         [Object] $Mailbox,
         [Parameter(HelpMessage="Enter FQDN of the Exchange Server to connect to")]
         [String] $Server = "defaultExchangeServer",
-        [Parameter(HelpMessage="Enter location to save PSTs")]
+        [Parameter(HelpMessage="Enter UNC path of location to save PSTs")]
         [String] $ExportPath = (Convert-Path .),
         [Parameter(HelpMessage="Enter number of exports to run simultaneously")]
         [Int] $SimultaneousJobs = 20,
@@ -75,19 +75,19 @@ function Export-ExchangeContacts {
             Write-Verbose "PSTs will be exported to $ExportPath..."
         }
 
+        ### Set the inputs and outputs for exported data ###
+        if ($ExportPath[-1] -ne "\"){$ExportPath += "\"}
+        $timestamp = (Get-Date).tostring('yyyyMMddHHmmss')
+        $batch = "Contacts_Export_$timestamp"
+
         ### Connect to Exchange ###
         $StopWatch = [system.diagnostics.stopwatch]::StartNew()
         Write-Verbose "Connecting to $Server..."
         $Session = New-PSSession -ConfigurationName microsoft.exchange -ConnectionUri http://$Server/powershell -Authentication Kerberos
         Import-PSSession -Session $Session -AllowClobber
 
-        ### Set the inputs and outputs for exported data ###
-        if ($ExportPath[-1] -ne "\"){$ExportPath += "\"}
-        $timestamp = (Get-Date).tostring('yyyyMMddHHmmss')
-        $batch = "Contacts_Export_$timestamp"
-
         Write-Verbose "$SimultaneousJobs Exports will be run concurrently..."
-        Write-Verbose "Contacts for $($Mailbox.count) mailboxes will be exported..."
+        Write-Verbose "Contacts for $(@($Mailbox).count) mailboxes will be exported..."
     }
     PROCESS {
         Try {
@@ -147,8 +147,3 @@ function Export-ExchangeContacts {
         if ($showRuntime) {Write-Output "Total script run time: $($StopWatch.Elapsed.TotalHours) Hours"}
     }
 }
-
-### Run function ###
-
-#$userMailboxes = Get-Mailbox -ResultSize 40
-#Export-PWContacts -Mailbox $userMailboxes -Verbose -ShowRunTime
