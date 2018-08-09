@@ -76,17 +76,16 @@ function Export-ExchangeContacts {
         }
 
         ### Set the inputs and outputs for exported data ###
+        $StopWatch = [system.diagnostics.stopwatch]::StartNew()
         if ($ExportPath[-1] -ne "\"){$ExportPath += "\"}
         $timestamp = (Get-Date).tostring('yyyyMMddHHmmss')
         $batch = "Contacts_Export_$timestamp"
+        Write-Verbose "$SimultaneousJobs Exports will be run concurrently..."
 
         ### Connect to Exchange ###
-        $StopWatch = [system.diagnostics.stopwatch]::StartNew()
         Write-Verbose "Connecting to $Server..."
         $Session = New-PSSession -ConfigurationName microsoft.exchange -ConnectionUri http://$Server/powershell -Authentication Kerberos
         Import-PSSession -Session $Session -AllowClobber
-
-        Write-Verbose "$SimultaneousJobs Exports will be run concurrently..."
     }
     PROCESS {
         Try {
