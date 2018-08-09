@@ -83,9 +83,16 @@ function Export-ExchangeContacts {
         Write-Verbose "$SimultaneousJobs Exports will be run concurrently..."
 
         ### Connect to Exchange ###
-        Write-Verbose "Connecting to $Server..."
-        $Session = New-PSSession -ConfigurationName microsoft.exchange -ConnectionUri http://$Server/powershell -Authentication Kerberos
-        Import-PSSession -Session $Session -AllowClobber
+        Try {
+            Test-PowerShellConnectivity -ClientAccessServer $Server -ErrorAction SilentlyContinue | Out-Null
+            Write-Verbose "Verified connection to $Server"
+            $ScriptConnection = $false
+        } Catch {
+            Write-Verbose "Connecting to $Server..."
+            $Session = New-PSSession -ConfigurationName microsoft.exchange -ConnectionUri http://$Server/powershell -Authentication Kerberos
+            Import-PSSession -Session $Session -AllowClobber
+            $ScriptConnection = $true
+        }
     }
     PROCESS {
         Try {
@@ -136,9 +143,11 @@ function Export-ExchangeContacts {
         $currentExportBatch | Remove-MailboxExportRequest -Confirm:$false
         Write-Verbose "Contacts Export COMPLETE"
 
-        ### Disconnect PSSession ###
-        Remove-PSSession -Session $Session
-        Write-Verbose "Disconnected PSSession from $Server..."
+        ### Disconnect from Exchange ###
+        if ($ScriptConnection -eq $true) {
+            Remove-PSSession -Session $Session
+            Write-Verbose "Disconnected PSSession from $Server..."
+        }
 
         ### Display run time/duration ###
         $StopWatch.Stop()
