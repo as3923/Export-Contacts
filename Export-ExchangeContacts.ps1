@@ -87,7 +87,6 @@ function Export-ExchangeContacts {
         Import-PSSession -Session $Session -AllowClobber
 
         Write-Verbose "$SimultaneousJobs Exports will be run concurrently..."
-        Write-Verbose "Contacts for $(@($Mailbox).count) mailboxes will be exported..."
     }
     PROCESS {
         Try {
