@@ -88,9 +88,8 @@ function Export-ExchangeContacts {
             Write-Verbose "Verified connection to $Server"
             $ScriptConnection = $false
         } Catch {
-            Write-Verbose "Connecting to $Server..."
             $Session = New-PSSession -ConfigurationName microsoft.exchange -ConnectionUri http://$Server/powershell -Authentication Kerberos
-            Import-PSSession -Session $Session -AllowClobber
+            Import-PSSession -Session $Session -AllowClobber -Verbose
             $ScriptConnection = $true
         }
     }
@@ -145,8 +144,7 @@ function Export-ExchangeContacts {
 
         ### Disconnect from Exchange ###
         if ($ScriptConnection -eq $true) {
-            Remove-PSSession -Session $Session
-            Write-Verbose "Disconnected PSSession from $Server..."
+            Remove-PSSession -Session $Session -Verbose
         }
 
         ### Display run time/duration ###
