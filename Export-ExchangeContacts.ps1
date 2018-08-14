@@ -100,8 +100,25 @@ function Export-ExchangeContacts {
             foreach ($m in $Mailbox){
                 $PSTfile = $ExportPath + $m.Alias + ".pst"
 	            $exportName = $m.Alias + "_" + $batch
-	            New-MailboxExportRequest -Mailbox $m.Alias -IncludeFolders "#Contacts#" -BatchName $batch -Name $exportName -FilePath $PSTfile -ExcludeDumpster | Out-Null
-                Write-Verbose "$exportName started..."
+                
+                $retries = 3
+                $success = $false
+                do {
+                    Try {
+	                    New-MailboxExportRequest -Mailbox $m.Alias -IncludeFolders "#Contacts#" -BatchName $batch -Name $exportName -FilePath $PSTfile -ExcludeDumpster | Out-Null
+                        Write-Verbose "$exportName started..."
+                        $success = $true
+                    } Catch { #[System.Management.Automation.RuntimeException] { #PSRemotingTransportException
+                        Write-Error $_
+                        Write-Verbose "Failure trying to export $exportName"
+                        Write-Verbose "Retrying in 60 seconds..."
+                        Start-Sleep 60
+                        $retries--
+                        if ($retries -eq 0) {
+                            Write-Verbose "Too many failed retries. Skipping $exportName."
+                        }
+                    }
+                } while (($retries -gt 0) -and ($success -eq $false))
 
                 ### Check number of Requests running and sleep if there are 20 or more ###
                 do {
@@ -133,7 +150,7 @@ function Export-ExchangeContacts {
         if (!(Test-Path $LogPath -PathType Container -ErrorAction SilentlyContinue)){
             Write-Verbose "$LogPath does not exist"
             Write-Verbose "Creating $LogPath folder"
-            New-Item -Path $LogPath -ItemType Directory
+            New-Item -Path $LogPath -ItemType Directory | Out-Null
         }
         $resultCsv = $LogPath + "$batch.csv"
         $currentExportBatch = Get-MailboxExportRequest | where {$_.BatchName -eq $batch -and ($_.status -eq "Completed" -or $_.status -eq "Failed")}
