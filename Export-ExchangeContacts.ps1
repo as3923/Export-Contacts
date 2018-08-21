@@ -105,17 +105,31 @@ function Export-ExchangeContacts {
                 $success = $false
                 do {
                     Try {
-	                    New-MailboxExportRequest -Mailbox $m.Alias -IncludeFolders "#Contacts#" -BatchName $batch -Name $exportName -FilePath $PSTfile -ExcludeDumpster | Out-Null
+                        New-MailboxExportRequest -Mailbox $m.Alias -IncludeFolders "#Contacts#" -BatchName $batch -Name $exportName -FilePath $PSTfile -ExcludeDumpster -ErrorAction Stop | Out-Null
                         Write-Verbose "$exportName started..."
                         $success = $true
                     } Catch { #[System.Management.Automation.RuntimeException] { #PSRemotingTransportException
                         Write-Error $_
-                        Write-Verbose "Failure trying to export $exportName"
-                        Write-Verbose "Retrying in 60 seconds..."
-                        Start-Sleep 60
-                        $retries--
-                        if ($retries -eq 0) {
-                            Write-Verbose "Too many failed retries. Skipping $exportName."
+                        Write-Verbose "$exportName export may have failed..."
+                        if ($Session.State -ne "Opened") {
+                            Write-Verbose "Current session state: $($Session.State)"
+                            Write-Verbose "Connecting to $Server..."
+                            Import-PSSession -Session $Session -AllowClobber
+                            Write-Verbose "Current session state: $($Session.State)"
+                            if ($Session.State -eq "Opened") {
+                                if ((Get-MailboxExportRequest -Name $exportName) -ne $null) {
+                                    $success = $true
+                                }
+                            }
+                        }
+                        if ($success -eq $false) {
+                            $retries--
+                            if ($retries -gt 0) {
+                                Write-Verbose "Retrying in 60 seconds..."
+                                Start-Sleep 60
+                            } else {
+                                Write-Verbose "Too many failed retries. Skipping $exportName."
+                            }
                         }
                     }
                 } while (($retries -gt 0) -and ($success -eq $false))
