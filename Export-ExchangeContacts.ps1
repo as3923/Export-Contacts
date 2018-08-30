@@ -106,21 +106,20 @@ function Export-ExchangeContacts {
                 do {
                     Try {
                         New-MailboxExportRequest -Mailbox $m.Alias -IncludeFolders "#Contacts#" -BatchName $batch -Name $exportName -FilePath $PSTfile -ExcludeDumpster -ErrorAction Stop | Out-Null
-                        Write-Verbose "$exportName started..."
-                        $success = $true
+                        Write-Verbose "$exportName starting..."
+                        $exportStatus = Get-MailboxExportRequest -Name $exportName | Select-Object -ExpandProperty "Status"
+                        if ($exportStatus -ne $null) {
+                            Write-Verbose "$exportName Status: $exportStatus"
+                            $success = $true
+                        }
                     } Catch { #[System.Management.Automation.RuntimeException] { #PSRemotingTransportException
                         Write-Error $_
-                        Write-Verbose "$exportName export may have failed..."
-                        if ($Session.State -ne "Opened") {
-                            Write-Verbose "Current session state: $($Session.State)"
-                            Write-Verbose "Connecting to $Server..."
-                            Import-PSSession -Session $Session -AllowClobber
-                            Write-Verbose "Current session state: $($Session.State)"
-                            if ($Session.State -eq "Opened") {
-                                if ((Get-MailboxExportRequest -Name $exportName) -ne $null) {
-                                    $success = $true
-                                }
-                            }
+                        $exportStatus = Get-MailboxExportRequest -Name $exportName | Select-Object -ExpandProperty "Status"
+                        if ($exportStatus -ne $null) {
+                            Write-Verbose "$exportName Status: $exportStatus"
+                            $success = $true
+                        } else {
+                            Write-Verbose "$exportName export may have failed..."
                         }
                         if ($success -eq $false) {
                             $retries--
